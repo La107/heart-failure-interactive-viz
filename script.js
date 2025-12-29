@@ -1,4 +1,4 @@
-const CSV_FILE = "heart_failure_clinical_records_dataset_cleaned.csv";
+const CSV_FILE = "./heart_failure_clinical_records_dataset_cleaned.csv";
 
 const COLUMNS = [
   "age",
@@ -24,8 +24,7 @@ let fullRanges = { x: null, y: null };
 const xSelect  = document.getElementById("xSelect");
 const ySelect  = document.getElementById("ySelect");
 const chartDiv = document.getElementById("chart");
-const statusEl = document.getElementById("status");
-const fileInput = document.getElementById("fileInput");
+const statusLeft = document.getElementById("statusLeft");
 
 document.getElementById("zoomInBtn").addEventListener("click", () => zoom(0.8));
 document.getElementById("zoomOutBtn").addEventListener("click", () => zoom(1.25));
@@ -34,8 +33,6 @@ document.getElementById("resetBtn").addEventListener("click", resetZoom);
 document.getElementById("pngBtn").addEventListener("click", () => saveImage("png"));
 document.getElementById("jpegBtn").addEventListener("click", () => saveImage("jpeg"));
 document.getElementById("pdfBtn").addEventListener("click", savePDF);
-
-fileInput.addEventListener("change", handleLocalUpload);
 
 init();
 
@@ -53,65 +50,31 @@ function init() {
   xSelect.addEventListener("change", render);
   ySelect.addEventListener("change", render);
 
-  loadCSVViaFetch();
+  loadCSV();
 }
 
-async function loadCSVViaFetch() {
-  statusEl.textContent = "Loading data…";
+async function loadCSV() {
+  statusLeft.textContent = "Loading data…";
 
   try {
-    const res = await fetch(CSV_FILE, { cache: "no-store" });
-
-    if (!res.ok) {
-      throw new Error(`Fetch failed (HTTP ${res.status}). Check CSV path/name.`);
-    }
+    const res = await fetch(`${CSV_FILE}?v=${Date.now()}`, { cache: "no-store" });
+    if (!res.ok) throw new Error(`CSV not found (HTTP ${res.status}).`);
 
     const csvText = await res.text();
-    parseAndSetData(csvText);
+    const parsed = Papa.parse(csvText, {
+      header: true,
+      dynamicTyping: true,
+      skipEmptyLines: true
+    });
 
+    rawData = parsed.data || [];
+    statusLeft.textContent = `Loaded ${rawData.length} rows.`;
+
+    render();
   } catch (err) {
-    // IMPORTANT: This is what you’re hitting now
-    statusEl.textContent =
-      `Could not load CSV via fetch. ` +
-      `If you opened this as file://, it won’t work. ` +
-      `Use GitHub Pages or upload the CSV using the file picker.`;
-
-    console.error("CSV load error:", err);
+    console.error(err);
+    statusLeft.textContent = `Error: ${err.message}`;
   }
-}
-
-function handleLocalUpload(e) {
-  const file = e.target.files?.[0];
-  if (!file) return;
-
-  statusEl.textContent = `Reading ${file.name}…`;
-
-  const reader = new FileReader();
-  reader.onload = () => {
-    parseAndSetData(reader.result);
-  };
-  reader.onerror = () => {
-    statusEl.textContent = "Error reading the file.";
-  };
-  reader.readAsText(file);
-}
-
-function parseAndSetData(csvText) {
-  const parsed = Papa.parse(csvText, {
-    header: true,
-    dynamicTyping: true,
-    skipEmptyLines: true
-  });
-
-  rawData = parsed.data || [];
-
-  if (!rawData.length) {
-    statusEl.textContent = "CSV parsed but no rows found.";
-    return;
-  }
-
-  statusEl.textContent = `Loaded ${rawData.length} rows.`;
-  render();
 }
 
 function render() {
@@ -135,12 +98,19 @@ function render() {
     groups.get(outcome).push(row);
   }
 
+  // fixed colors to match legend swatches
+  const colorMap = {
+    "Died": "#1f77b4",
+    "Survived": "#ff7f0e"
+  };
+
   const traces = [];
   for (const [outcome, rows] of groups.entries()) {
     traces.push({
       type: "scattergl",
       mode: "markers",
       name: outcome,
+      showlegend: false, // ✅ legend removed from plot
       x: rows.map(r => r[xCol]),
       y: rows.map(r => r[yCol]),
       text: rows.map(r =>
@@ -152,20 +122,27 @@ function render() {
         `${yCol}: ${r[yCol]}`
       ),
       hovertemplate: "%{text}<extra></extra>",
-      marker: { size: 8, opacity: 0.75 }
+      marker: {
+        size: 8,
+        opacity: 0.75,
+        color: colorMap[outcome] || "#444"
+      }
     });
   }
 
   if (!traces.length) {
-    statusEl.textContent = "No valid points for these axis selections.";
+    statusLeft.textContent = "No valid points for these axis selections.";
     return;
   }
 
-  // ranges (for reset)
+  // --- ranges: force axes to include 0 and cross at 0
   const xs = traces.flatMap(t => t.x);
   const ys = traces.flatMap(t => t.y);
-  const xmin = Math.min(...xs), xmax = Math.max(...xs);
-  const ymin = Math.min(...ys), ymax = Math.max(...ys);
+
+  const xmin = Math.min(...xs, 0);
+  const xmax = Math.max(...xs, 0);
+  const ymin = Math.min(...ys, 0);
+  const ymax = Math.max(...ys, 0);
 
   const xpad = (xmax - xmin) * 0.05 || 1;
   const ypad = (ymax - ymin) * 0.05 || 1;
@@ -173,40 +150,57 @@ function render() {
   fullRanges.x = [xmin - xpad, xmax + xpad];
   fullRanges.y = [ymin - ypad, ymax + ypad];
 
+  const axisCommon = {
+    showgrid: false,
+    zeroline: false,
+    showline: true,
+    linewidth: 1.8,
+    linecolor: "#111",
+
+    // ✅ remove ticks and numeric labels
+    ticks: "",
+    showticklabels: false,
+
+    // ✅ more space between axis and title
+    title_standoff: 24
+  };
+
   const layout = {
-    margin: { l: 60, r: 20, t: 30, b: 55 },
+    margin: { l: 70, r: 20, t: 20, b: 75 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
-    // ✅ no gridlines + ✅ axis lines like your screenshot
     xaxis: {
+      ...axisCommon,
       title: { text: xCol },
-      showgrid: false,
-      zeroline: false,
-      showline: true,
-      linewidth: 1.5,
-      linecolor: "#111",
-      ticks: "outside",
-      ticklen: 6,
-      tickwidth: 1.2,
-      tickcolor: "#111",
-      range: fullRanges.x
+      range: fullRanges.x,
+
+      // ✅ axis crosses at (0,0)
+      anchor: "y"
     },
+
     yaxis: {
+      ...axisCommon,
       title: { text: yCol },
-      showgrid: false,
-      zeroline: false,
-      showline: true,
-      linewidth: 1.5,
-      linecolor: "#111",
-      ticks: "outside",
-      ticklen: 6,
-      tickwidth: 1.2,
-      tickcolor: "#111",
       range: fullRanges.y
     },
 
-    legend: { x: 0.02, y: 0.98 }
+    // ✅ add a visible "0" at the intersection (since tick labels are off)
+    annotations: [
+      {
+        x: 0,
+        y: 0,
+        xref: "x",
+        yref: "y",
+        text: "0",
+        showarrow: false,
+        xanchor: "left",
+        yanchor: "bottom",
+        font: { size: 12, color: "#111" },
+        xshift: 6,
+        yshift: 6
+      }
+    ]
   };
 
   Plotly.newPlot(chartDiv, traces, layout, {
