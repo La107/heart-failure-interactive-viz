@@ -1,9 +1,9 @@
-// ------------------------------
-// Config
-// ------------------------------
+// -----------------------------
+// CONFIG
+// -----------------------------
 const DATA_FILE = "heart_failure_clinical_records_dataset_cleaned.csv";
 
-// numeric columns that make sense on axes
+// Numeric columns that make sense on axes
 const NUMERIC_COLS = [
   "age",
   "creatinine_phosphokinase",
@@ -14,164 +14,219 @@ const NUMERIC_COLS = [
   "time"
 ];
 
-// binary 0/1 filters available (must exist in your cleaned CSV)
-const BINARY_FILTERS = {
-  anaemia: "fAnaemia",
-  diabetes: "fDiabetes",
-  high_blood_pressure: "fHBP",
-  smoking: "fSmoking"
+// Binary clinical-condition columns (0/1)
+const CONDITION_COLS = {
+  anaemia: "anaemia",
+  diabetes: "diabetes",
+  highBP: "high_blood_pressure",
+  smoking: "smoking"
 };
 
-let rawData = [];
+// Expected labels in your cleaned dataset
+const SEX_COL = "sex_label";       // "Female" / "Male"
+const OUTCOME_COL = "death_label"; // "Survived" / "Died"
 
-// ------------------------------
-// Helpers
-// ------------------------------
-function $(id) { return document.getElementById(id); }
+// -----------------------------
+// HELPERS
+// -----------------------------
+function parseCSV(text) {
+  // simple CSV parser (handles commas, no quoted commas support needed for this dataset)
+  const lines = text.trim().split(/\r?\n/);
+  const headers = lines[0].split(",").map(h => h.trim());
 
-function parseRow(d) {
-  // Convert numeric fields to numbers
-  const row = { ...d };
+  const rows = [];
+  for (let i = 1; i < lines.length; i++) {
+    const parts = lines[i].split(",");
+    if (parts.length !== headers.length) continue;
 
-  for (const c of NUMERIC_COLS) row[c] = +row[c];
+    const obj = {};
+    for (let j = 0; j < headers.length; j++) {
+      const key = headers[j];
+      const raw = parts[j].trim();
 
-  // Binary columns
-  for (const c of Object.keys(BINARY_FILTERS)) row[c] = +row[c];
-
-  // Labels (strings)
-  row.sex_label = String(row.sex_label);
-  row.death_label = String(row.death_label);
-
-  return row;
-}
-
-function populateAxisDropdown(selectEl, cols, defaultValue) {
-  selectEl.innerHTML = "";
-  for (const c of cols) {
-    const opt = document.createElement("option");
-    opt.value = c;
-    opt.textContent = c.replaceAll("_", " ");
-    selectEl.appendChild(opt);
-  }
-  selectEl.value = defaultValue;
-}
-
-function currentSelections() {
-  const sexAllowed = new Set();
-  if ($("sexFemale").checked) sexAllowed.add("Female");
-  if ($("sexMale").checked) sexAllowed.add("Male");
-
-  const outcomeAllowed = new Set();
-  if ($("outcomeSurvived").checked) outcomeAllowed.add("Survived");
-  if ($("outcomeDied").checked) outcomeAllowed.add("Died");
-
-  const binaryMustBe1 = {};
-  for (const [col, checkboxId] of Object.entries(BINARY_FILTERS)) {
-    binaryMustBe1[col] = $(checkboxId).checked; // if true, keep only rows with col==1
-  }
-
-  return {
-    x: $("xSelect").value,
-    y: $("ySelect").value,
-    sexAllowed,
-    outcomeAllowed,
-    binaryMustBe1
-  };
-}
-
-function filterData(data, sel) {
-  return data.filter(r => {
-    if (!sel.sexAllowed.has(r.sex_label)) return false;
-    if (!sel.outcomeAllowed.has(r.death_label)) return false;
-
-    for (const [col, mustBe1] of Object.entries(sel.binaryMustBe1)) {
-      if (mustBe1 && r[col] !== 1) return false;
+      // convert numeric fields if possible
+      const num = Number(raw);
+      obj[key] = Number.isFinite(num) && raw !== "" ? num : raw;
     }
+    rows.push(obj);
+  }
+  return rows;
+}
 
-    if (!Number.isFinite(r[sel.x]) || !Number.isFinite(r[sel.y])) return false;
+function setStatus(msg) {
+  const el = document.getElementById("status");
+  if (el) el.textContent = msg || "";
+}
+
+function getChecked(id) {
+  const el = document.getElementById(id);
+  return el ? el.checked : false;
+}
+
+function getSelectValue(id) {
+  const el = document.getElementById(id);
+  return el ? el.value : null;
+}
+
+function populateSelect(selectId, options, defaultValue) {
+  const sel = document.getElementById(selectId);
+  sel.innerHTML = "";
+  for (const opt of options) {
+    const o = document.createElement("option");
+    o.value = opt;
+    o.textContent = opt.replaceAll("_", " ");
+    sel.appendChild(o);
+  }
+  if (defaultValue && options.includes(defaultValue)) {
+    sel.value = defaultValue;
+  } else {
+    sel.value = options[0];
+  }
+}
+
+// -----------------------------
+// MAIN
+// -----------------------------
+let RAW = [];
+let currentLayout = null;
+
+async function loadData() {
+  setStatus("Loading dataset...");
+  const res = await fetch(DATA_FILE);
+  if (!res.ok) throw new Error(`Cannot load ${DATA_FILE} (HTTP ${res.status})`);
+  const text = await res.text();
+  RAW = parseCSV(text);
+
+  setStatus(`Loaded ${RAW.length} rows.`);
+}
+
+function applyFilters(rows) {
+  // Sex filter (if both unchecked -> show none)
+  const sexFemale = getChecked("sexFemale");
+  const sexMale = getChecked("sexMale");
+
+  // Outcome filter (if both unchecked -> show none)
+  const outSurv = getChecked("outcomeSurvived");
+  const outDied = getChecked("outcomeDied");
+
+  // Condition filters: if a condition checkbox is checked, require col == 1
+  const requireAnaemia = getChecked("anaemia");
+  const requireDiabetes = getChecked("diabetes");
+  const requireHighBP = getChecked("highBP");
+  const requireSmoking = getChecked("smoking");
+
+  return rows.filter(r => {
+    // sex
+    const sexOk =
+      (sexFemale && r[SEX_COL] === "Female") ||
+      (sexMale && r[SEX_COL] === "Male");
+    if (!sexOk) return false;
+
+    // outcome
+    const outOk =
+      (outSurv && r[OUTCOME_COL] === "Survived") ||
+      (outDied && r[OUTCOME_COL] === "Died");
+    if (!outOk) return false;
+
+    // conditions
+    if (requireAnaemia && Number(r[CONDITION_COLS.anaemia]) !== 1) return false;
+    if (requireDiabetes && Number(r[CONDITION_COLS.diabetes]) !== 1) return false;
+    if (requireHighBP && Number(r[CONDITION_COLS.highBP]) !== 1) return false;
+    if (requireSmoking && Number(r[CONDITION_COLS.smoking]) !== 1) return false;
 
     return true;
   });
 }
 
-function buildTraces(data, sel) {
-  const groups = { Survived: [], Died: [] };
-  for (const r of data) groups[r.death_label].push(r);
+function buildTraces(filtered, xCol, yCol) {
+  // split into two traces: Survived vs Died
+  const surv = filtered.filter(r => r[OUTCOME_COL] === "Survived");
+  const died = filtered.filter(r => r[OUTCOME_COL] === "Died");
 
-  const makeTrace = (label, rows) => ({
-    type: "scatter",
-    mode: "markers",
-    name: label,
-    x: rows.map(r => r[sel.x]),
-    y: rows.map(r => r[sel.y]),
-    text: rows.map(r => (
-      `sex: ${r.sex_label}<br>` +
-      `outcome: ${r.death_label}<br>` +
-      `age: ${r.age}<br>` +
-      `time: ${r.time}`
-    )),
-    hovertemplate:
-      `<b>${label}</b><br>` +
-      `${sel.x}: %{x}<br>` +
-      `${sel.y}: %{y}<br>` +
-      `%{text}<extra></extra>`,
-    marker: { size: 9, opacity: 0.8 }
-  });
+  function makeTrace(arr, name) {
+    return {
+      type: "scatter",
+      mode: "markers",
+      name,
+      x: arr.map(r => Number(r[xCol])).filter(v => Number.isFinite(v)),
+      y: arr.map(r => Number(r[yCol])).filter(v => Number.isFinite(v)),
+      marker: { size: 10, opacity: 0.85 },
+      hovertemplate:
+        `<b>${name}</b><br>` +
+        `${xCol}: %{x}<br>` +
+        `${yCol}: %{y}<br>` +
+        `sex: %{customdata[0]}<br>` +
+        `<extra></extra>`,
+      customdata: arr.map(r => [r[SEX_COL]])
+    };
+  }
 
-  return [
-    makeTrace("Survived", groups.Survived),
-    makeTrace("Died", groups.Died)
-  ];
+  return [makeTrace(surv, "Survived"), makeTrace(died, "Died")];
 }
 
-function drawChart() {
-  const sel = currentSelections();
-  const filtered = filterData(rawData, sel);
+function drawPlot() {
+  const xCol = getSelectValue("xSelect");
+  const yCol = getSelectValue("ySelect");
 
-  $("countShown").textContent = String(filtered.length);
-  $("countTotal").textContent = String(rawData.length);
+  const filtered = applyFilters(RAW);
 
-  const traces = buildTraces(filtered, sel);
+  const traces = buildTraces(filtered, xCol, yCol);
 
   const layout = {
-    margin: { l: 60, r: 20, t: 30, b: 55 },
-    xaxis: { title: sel.x.replaceAll("_", " "), zeroline: false },
-    yaxis: { title: sel.y.replaceAll("_", " "), zeroline: false },
-    legend: { orientation: "h" },
-    hovermode: "closest"
+    margin: { l: 70, r: 30, t: 20, b: 70 },
+    xaxis: { title: xCol.replaceAll("_", " "), zeroline: false },
+    yaxis: { title: yCol.replaceAll("_", " "), zeroline: false },
+    legend: { orientation: "h", y: -0.15 },
+    dragmode: "zoom"
   };
 
-  const config = { responsive: true, displaylogo: false };
+  const config = {
+    responsive: true,
+    displaylogo: false
+  };
 
-  Plotly.react("chart", traces, layout, config);
+  currentLayout = layout;
+  Plotly.newPlot("plot", traces, layout, config);
+
+  // IMPORTANT: we do NOT show "Showing x / y records" anywhere.
+  setStatus(`Displayed ${filtered.length} points (filtered).`);
 }
 
-// ------------------------------
-// Init
-// ------------------------------
+function wireEvents() {
+  const ids = [
+    "xSelect", "ySelect",
+    "sexFemale", "sexMale",
+    "outcomeSurvived", "outcomeDied",
+    "anaemia", "diabetes", "highBP", "smoking"
+  ];
+  ids.forEach(id => {
+    const el = document.getElementById(id);
+    el.addEventListener("change", () => drawPlot());
+  });
+
+  document.getElementById("resetZoom").addEventListener("click", () => {
+    // reset to autorange
+    Plotly.relayout("plot", {
+      "xaxis.autorange": true,
+      "yaxis.autorange": true
+    });
+  });
+}
+
 async function init() {
-  const data = await d3.csv(DATA_FILE, parseRow);
-  rawData = data;
+  try {
+    await loadData();
 
-  populateAxisDropdown($("xSelect"), NUMERIC_COLS, "age");
-  populateAxisDropdown($("ySelect"), NUMERIC_COLS, "ejection_fraction");
+    // populate dropdowns + choose defaults that match your screenshot feel
+    populateSelect("xSelect", NUMERIC_COLS, "serum_sodium");
+    populateSelect("ySelect", NUMERIC_COLS, "age");
 
-  [
-    "xSelect","ySelect",
-    "sexFemale","sexMale",
-    "outcomeSurvived","outcomeDied",
-    "fAnaemia","fDiabetes","fHBP","fSmoking"
-  ].forEach(id => $(id).addEventListener("change", drawChart));
-
-  $("resetBtn").addEventListener("click", () =>
-    Plotly.relayout("chart", { "xaxis.autorange": true, "yaxis.autorange": true })
-  );
-
-  drawChart();
+    wireEvents();
+    drawPlot();
+  } catch (err) {
+    console.error(err);
+    setStatus(`Error: ${err.message}`);
+  }
 }
 
-init().catch(err => {
-  console.error(err);
-  alert("Could not load the dataset. Make sure the CSV file name matches and is in the same folder as index.html.");
-});
-
+init();
