@@ -5,13 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Heart Failure – Interactive Scatter Plot</title>
 
-  <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-
-  <!-- CSV parser -->
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
-
-  <!-- jsPDF for PDF export -->
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
 
   <link rel="stylesheet" href="style.css" />
@@ -41,9 +36,12 @@
         <button id="pdfBtn" type="button">Save PDF</button>
       </div>
 
+      <h2>Local test (optional)</h2>
       <p class="hint">
-        Tip: hover points for details. You can also use the Plotly toolbar (pan/zoom, lasso, etc.).
+        If you opened this page as a local file (<code>file://</code>), the CSV cannot be fetched.
+        Use GitHub Pages, or upload the CSV here:
       </p>
+      <input id="fileInput" type="file" accept=".csv" />
     </aside>
 
     <main class="chartWrap">
