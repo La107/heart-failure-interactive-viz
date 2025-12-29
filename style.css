@@ -77,12 +77,6 @@ button#resetZoom:hover {
   filter: brightness(0.98);
 }
 
-.status {
-  margin-top: 14px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
 .plot-area {
   padding: 16px;
 }
@@ -104,11 +98,3 @@ button#resetZoom:hover {
     height: 70vh;
   }
 }
-/* Hide any status text (e.g., record count) */
-#status { display: none; }
-/* Hide the text under Reset zoom (Displayed ... points) */
-#status,
-.status {
-  display: none !important;
-}
-
