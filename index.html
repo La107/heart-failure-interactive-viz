@@ -2,11 +2,10 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Heart Failure Interactive Explorer</title>
+  <title>Heart Failure – Interactive Scatter Plot</title>
 
-  <!-- Plotly + D3 -->
+  <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
-  <script src="https://d3js.org/d3.v7.min.js"></script>
 
   <!-- CSS -->
   <link rel="stylesheet" href="style.css" />
@@ -14,44 +13,46 @@
 
 <body>
   <div class="container">
+
+    <!-- LEFT PANEL: CONTROLS -->
     <aside class="controls">
       <h2>Controls</h2>
 
-      <label>X-axis</label>
+      <!-- Axis selectors -->
+      <label for="xSelect">X-axis</label>
       <select id="xSelect"></select>
 
-      <label>Y-axis</label>
+      <label for="ySelect">Y-axis</label>
       <select id="ySelect"></select>
 
+      <!-- Sex filter -->
       <h3>Sex</h3>
-      <label><input type="checkbox" id="sexFemale" checked> Female</label>
-      <label><input type="checkbox" id="sexMale" checked> Male</label>
+      <label><input type="checkbox" id="sexFemale" checked /> Female</label>
+      <label><input type="checkbox" id="sexMale" checked /> Male</label>
 
+      <!-- Outcome filter -->
       <h3>Outcome</h3>
-      <label><input type="checkbox" id="outcomeSurvived" checked> Survived</label>
-      <label><input type="checkbox" id="outcomeDied" checked> Died</label>
+      <label><input type="checkbox" id="outcomeSurvived" checked /> Survived</label>
+      <label><input type="checkbox" id="outcomeDied" checked /> Died</label>
 
+      <!-- Clinical conditions -->
       <h3>Clinical conditions</h3>
-      <label><input type="checkbox" id="fAnaemia"> Anaemia</label>
-      <label><input type="checkbox" id="fDiabetes"> Diabetes</label>
-      <label><input type="checkbox" id="fHBP"> High blood pressure</label>
-      <label><input type="checkbox" id="fSmoking"> Smoking</label>
+      <label><input type="checkbox" id="anaemia" /> Anaemia</label>
+      <label><input type="checkbox" id="diabetes" /> Diabetes</label>
+      <label><input type="checkbox" id="highBP" /> High blood pressure</label>
+      <label><input type="checkbox" id="smoking" /> Smoking</label>
 
-      <button id="resetBtn">Reset zoom</button>
-
-      <p class="count">
-        Showing <span id="countShown">0</span> /
-        <span id="countTotal">0</span> records
-      </p>
+      <button id="resetZoom">Reset zoom</button>
     </aside>
 
-    <main class="viz">
-      <div id="chart"></div>
+    <!-- RIGHT PANEL: PLOT -->
+    <main class="plot-area">
+      <div id="plot"></div>
     </main>
+
   </div>
 
-  <!-- JS -->
+  <!-- JavaScript -->
   <script src="script.js"></script>
 </body>
 </html>
-
