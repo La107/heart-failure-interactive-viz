@@ -26,6 +26,7 @@ const ySelect  = document.getElementById("ySelect");
 const chartDiv = document.getElementById("chart");
 const statusLeft = document.getElementById("statusLeft");
 
+// Event Listeners for UI
 document.getElementById("zoomInBtn").addEventListener("click", () => zoom(0.8));
 document.getElementById("zoomOutBtn").addEventListener("click", () => zoom(1.25));
 document.getElementById("resetBtn").addEventListener("click", resetZoom);
@@ -108,8 +109,8 @@ function render() {
     traces.push({
       type: "scattergl",
       mode: "markers",
-      name: outcome,          // ✅ legend label
-      showlegend: true,       // ✅ legend ON
+      name: outcome,
+      showlegend: true,
       x: rows.map(r => r[xCol]),
       y: rows.map(r => r[yCol]),
       text: rows.map(r =>
@@ -150,12 +151,13 @@ function render() {
     linewidth: 1.8,
     linecolor: "#111",
     ticks: "",
-    showticklabels: false,
+    showticklabels: true, // Set to true if you want to see numbers on axes
     title_standoff: 24
   };
 
   const layout = {
-    margin: { l: 70, r: 120, t: 40, b: 75 }, // 👉 spazio per la legenda
+    // Reduced right margin since legend is now internal
+    margin: { l: 70, r: 40, t: 40, b: 75 }, 
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
@@ -171,14 +173,15 @@ function render() {
       range: fullRanges.y
     },
 
-    // ✅ LEGEND: fuori dal plot, top-right
+    // ✅ LEGEND: Positioned inside the top-right of the graph
     legend: {
-      x: 1.02,
-      y: 1,
-      xanchor: "left",
+      x: 0.98,
+      y: 0.98,
+      xanchor: "right",
       yanchor: "top",
-      bgcolor: "rgba(255,255,255,0.9)",
-      borderwidth: 0,
+      bgcolor: "rgba(255,255,255,0.7)", // Semi-transparent
+      borderwidth: 1,
+      bordercolor: "#ccc",
       font: { size: 14 }
     },
 
