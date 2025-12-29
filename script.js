@@ -1,4 +1,4 @@
-// script.js — FULL VERSION (with axis scales + y starting at 0 + legend outside top-right)
+// script.js — FULL WORKING VERSION (axis numbers ON + y starts at 0)
 
 const CSV_FILE = "./heart_failure_clinical_records_dataset_cleaned.csv";
 
@@ -39,9 +39,9 @@ document.getElementById("pdfBtn").addEventListener("click", savePDF);
 init();
 
 function init() {
-  const axisCandidates = COLUMNS.filter((c) => !["sex_label", "death_label"].includes(c));
+  const axisCandidates = COLUMNS.filter(c => !["sex_label", "death_label"].includes(c));
 
-  axisCandidates.forEach((col) => {
+  axisCandidates.forEach(col => {
     xSelect.add(new Option(col, col));
     ySelect.add(new Option(col, col));
   });
@@ -112,16 +112,15 @@ function render() {
       mode: "markers",
       name: outcome,
       showlegend: true,
-      x: rows.map((r) => r[xCol]),
-      y: rows.map((r) => r[yCol]),
-      text: rows.map(
-        (r) =>
-          `${OUTCOME_COL}: ${r[OUTCOME_COL]}<br>` +
-          `sex_label: ${r.sex_label}<br>` +
-          `age: ${r.age}<br>` +
-          `time: ${r.time}<br>` +
-          `${xCol}: ${r[xCol]}<br>` +
-          `${yCol}: ${r[yCol]}`
+      x: rows.map(r => r[xCol]),
+      y: rows.map(r => r[yCol]),
+      text: rows.map(r =>
+        `${OUTCOME_COL}: ${r[OUTCOME_COL]}<br>` +
+        `sex_label: ${r.sex_label}<br>` +
+        `age: ${r.age}<br>` +
+        `time: ${r.time}<br>` +
+        `${xCol}: ${r[xCol]}<br>` +
+        `${yCol}: ${r[yCol]}`
       ),
       hovertemplate: "%{text}<extra></extra>",
       marker: {
@@ -137,9 +136,9 @@ function render() {
     return;
   }
 
-  // ----- ranges: X based on data, Y forced to start at 0
-  const xs = traces.flatMap((t) => t.x);
-  const ys = traces.flatMap((t) => t.y);
+  // -------- ranges
+  const xs = traces.flatMap(t => t.x);
+  const ys = traces.flatMap(t => t.y);
 
   const xmin = Math.min(...xs);
   const xmax = Math.max(...xs);
@@ -149,11 +148,13 @@ function render() {
   const ypad = ymax * 0.05 || 1;
 
   fullRanges.x = [xmin - xpad, xmax + xpad];
-  fullRanges.y = [0, ymax + ypad];
+  fullRanges.y = [0, ymax + ypad]; // ✅ y starts at 0
 
+  // ✅ axis numbers ON (the thing missing in your screenshot)
   const axisCommon = {
     showgrid: false,
     zeroline: false,
+
     showline: true,
     linewidth: 1.8,
     linecolor: "#111",
@@ -166,11 +167,13 @@ function render() {
     showticklabels: true,
     tickfont: { size: 12, color: "#111" },
 
+    automargin: true,
     title_standoff: 30
   };
 
   const layout = {
-    margin: { l: 100, r: 150, t: 30, b: 100 },
+    // ✅ enough room so tick labels are NOT cut
+    margin: { l: 95, r: 150, t: 25, b: 95 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
@@ -184,9 +187,13 @@ function render() {
       ...axisCommon,
       title: { text: yCol },
       range: fullRanges.y,
-      rangemode: "tozero"
+
+      // ✅ force 0 to appear as a tick at the bottom
+      tickmode: "auto",
+      tick0: 0
     },
 
+    // legend outside top-right
     legend: {
       x: 1.02,
       y: 1,
@@ -197,7 +204,7 @@ function render() {
       font: { size: 14 }
     },
 
-    // write "0" at the axis intersection (bottom-left)
+    // ✅ show "0" at intersection (bottom-left of plotting area)
     annotations: [
       {
         xref: "paper",
@@ -226,15 +233,15 @@ function zoom(factor) {
   const xr = gd.layout?.xaxis?.range;
   const yr = gd.layout?.yaxis?.range;
 
-  const xRange = xr && xr.length === 2 ? xr : fullRanges.x;
-  const yRange = yr && yr.length === 2 ? yr : fullRanges.y;
+  const xRange = (xr && xr.length === 2) ? xr : fullRanges.x;
+  const yRange = (yr && yr.length === 2) ? yr : fullRanges.y;
   if (!xRange || !yRange) return;
 
   const xMid = (xRange[0] + xRange[1]) / 2;
   const yMid = (yRange[0] + yRange[1]) / 2;
 
-  const xHalf = ((xRange[1] - xRange[0]) / 2) * factor;
-  const yHalf = ((yRange[1] - yRange[0]) / 2) * factor;
+  const xHalf = (xRange[1] - xRange[0]) / 2 * factor;
+  const yHalf = (yRange[1] - yRange[0]) / 2 * factor;
 
   Plotly.relayout(gd, {
     "xaxis.range": [xMid - xHalf, xMid + xHalf],
