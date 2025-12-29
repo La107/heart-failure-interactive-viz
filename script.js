@@ -120,7 +120,12 @@ function render() {
     groups.get(outcome).push(row);
   }
 
-  const colorMap = { Died: "#1f77b4", Survived: "#ff7f0e" };
+  // ColorBrewer – Qualitative – Set2 (2 colors)
+  const colorMap = {
+  Survived: "#66C2A5", // teal / green
+  Died: "#FC8D62"      // soft orange
+  };
+
 
   const traces = [];
   for (const [outcome, rows] of groups.entries()) {
