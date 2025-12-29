@@ -1,9 +1,5 @@
-// ------------------------------
-// Config
-// ------------------------------
 const DATA_FILE = "heart_failure_clinical_records_dataset_cleaned.csv";
 
-// SOLO colonne numeriche sensate sugli assi (come nel tuo screenshot)
 const NUMERIC_COLS = [
   "age",
   "creatinine_phosphokinase",
@@ -14,99 +10,91 @@ const NUMERIC_COLS = [
   "time"
 ];
 
-// Colonne filtro (0/1)
-const BINARY_FILTERS = [
-  { id: "anaemia", col: "anaemia" },
-  { id: "diabetes", col: "diabetes" },
-  { id: "highBP", col: "high_blood_pressure" },
-  { id: "smoking", col: "smoking" }
-];
-
-// Etichette (come le tue: sex_label e death_label)
-const SEX_COL = "sex_label";        // "Female"/"Male"
-const OUTCOME_COL = "death_label";  // "Survived"/"Died"
-
-let rawData = [];
-
-// ------------------------------
-// Utils: CSV parser semplice
-// (dataset Kaggle = CSV pulito, senza virgole dentro campi)
-// ------------------------------
-function parseCSV(text) {
-  const lines = text.trim().split(/\r?\n/);
-  const headers = lines[0].split(",").map(h => h.trim());
-  const rows = [];
-
-  for (let i = 1; i < lines.length; i++) {
-    const parts = lines[i].split(","); // ok per questo dataset
-    const obj = {};
-    headers.forEach((h, idx) => {
-      obj[h] = parts[idx];
-    });
-    rows.push(obj);
-  }
-  return rows;
-}
-
-function toNumber(v) {
-  const n = Number(v);
-  return Number.isFinite(n) ? n : null;
-}
-
-// ------------------------------
-// UI
-// ------------------------------
+const statusEl = document.getElementById("status");
 const xSelect = document.getElementById("xSelect");
 const ySelect = document.getElementById("ySelect");
 
-function setUpAxisDropdowns() {
-  // options
-  for (const c of NUMERIC_COLS) {
-    const ox = document.createElement("option");
-    ox.value = c;
-    ox.textContent = c.replaceAll("_", " ");
-    xSelect.appendChild(ox);
+let rawData = [];
 
-    const oy = document.createElement("option");
-    oy.value = c;
-    oy.textContent = c.replaceAll("_", " ");
-    ySelect.appendChild(oy);
-  }
+function parseCSV(text) {
+  const lines = text.trim().split("\n");
+  const headers = lines[0].split(",");
+  return lines.slice(1).map(line => {
+    const values = line.split(",");
+    const obj = {};
+    headers.forEach((h, i) => obj[h] = values[i]);
+    return obj;
+  });
+}
 
-  // default (come nel tuo screenshot)
+function setupAxes() {
+  NUMERIC_COLS.forEach(c => {
+    const ox = new Option(c.replaceAll("_", " "), c);
+    const oy = new Option(c.replaceAll("_", " "), c);
+    xSelect.add(ox);
+    ySelect.add(oy);
+  });
+
   xSelect.value = "serum_sodium";
   ySelect.value = "age";
 }
 
-function getCheckbox(id) {
-  return document.getElementById(id).checked;
-}
-
-// ------------------------------
-// Filtering + plot
-// ------------------------------
-function getFilteredData() {
-  const allowedSex = new Set();
-  if (getCheckbox("sexFemale")) allowedSex.add("Female");
-  if (getCheckbox("sexMale")) allowedSex.add("Male");
-
-  const allowedOutcome = new Set();
-  if (getCheckbox("outcomeSurvived")) allowedOutcome.add("Survived");
-  if (getCheckbox("outcomeDied")) allowedOutcome.add("Died");
-
+function filteredData() {
   return rawData.filter(d => {
-    // sex + outcome
-    if (!allowedSex.has(d[SEX_COL])) return false;
-    if (!allowedOutcome.has(d[OUTCOME_COL])) return false;
-
-    // binary filters: se spunti, tieni solo 1
-    for (const f of BINARY_FILTERS) {
-      if (getCheckbox(f.id)) {
-        if (String(d[f.col]) !== "1") return false;
-      }
-    }
+    if (!document.getElementById("sexFemale").checked && d.sex_label === "Female") return false;
+    if (!document.getElementById("sexMale").checked && d.sex_label === "Male") return false;
+    if (!document.getElementById("outcomeSurvived").checked && d.death_label === "Survived") return false;
+    if (!document.getElementById("outcomeDied").checked && d.death_label === "Died") return false;
+    if (document.getElementById("anaemia").checked && d.anaemia !== "1") return false;
+    if (document.getElementById("diabetes").checked && d.diabetes !== "1") return false;
+    if (document.getElementById("highBP").checked && d.high_blood_pressure !== "1") return false;
+    if (document.getElementById("smoking").checked && d.smoking !== "1") return false;
     return true;
   });
 }
 
-funct
+function drawPlot() {
+  const data = filteredData();
+  const x = xSelect.value;
+  const y = ySelect.value;
+
+  const survived = data.filter(d => d.death_label === "Survived");
+  const died = data.filter(d => d.death_label === "Died");
+
+  Plotly.newPlot("plot", [
+    {
+      x: survived.map(d => +d[x]),
+      y: survived.map(d => +d[y]),
+      mode: "markers",
+      name: "Survived"
+    },
+    {
+      x: died.map(d => +d[x]),
+      y: died.map(d => +d[y]),
+      mode: "markers",
+      name: "Died"
+    }
+  ], {
+    xaxis: { title: x.replaceAll("_", " ") },
+    yaxis: { title: y.replaceAll("_", " ") }
+  });
+
+  // QUI viene scritta la frase
+  statusEl.textContent = `Displayed ${data.length} points (filtered).`;
+}
+
+document.getElementById("resetZoom").onclick = () =>
+  Plotly.relayout("plot", { "xaxis.autorange": true, "yaxis.autorange": true });
+
+async function main() {
+  setupAxes();
+  const res = await fetch(DATA_FILE);
+  rawData = parseCSV(await res.text());
+
+  document.querySelectorAll("input, select")
+    .forEach(el => el.addEventListener("change", drawPlot));
+
+  drawPlot();
+}
+
+main();
