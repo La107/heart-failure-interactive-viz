@@ -4,48 +4,41 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Heart Failure – Interactive Scatter Plot</title>
-
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
-
   <link rel="stylesheet" href="style.css" />
 </head>
-
 <body>
   <div class="container">
     <aside class="controls">
       <h1>Controls</h1>
-
       <label for="xSelect">X-axis</label>
       <select id="xSelect"></select>
-
       <label for="ySelect">Y-axis</label>
       <select id="ySelect"></select>
 
       <div class="buttonRow">
-        <button id="zoomInBtn" type="button">Zoom in</button>
-        <button id="zoomOutBtn" type="button">Zoom out</button>
-        <button id="resetBtn" type="button">Reset</button>
+        <button id="zoomInBtn">Zoom in</button>
+        <button id="zoomOutBtn">Zoom out</button>
+        <button id="resetBtn">Reset</button>
       </div>
 
       <h2>Export</h2>
       <div class="buttonRow">
-        <button id="pngBtn" type="button">Save PNG</button>
-        <button id="jpegBtn" type="button">Save JPEG</button>
-        <button id="pdfBtn" type="button">Save PDF</button>
+        <button id="pngBtn">Save PNG</button>
+        <button id="jpegBtn">Save JPEG</button>
+        <button id="pdfBtn">Save PDF</button>
       </div>
 
       <h2>Status</h2>
       <div id="statusLeft" class="statusLeft">Loading…</div>
-
-      </aside>
+    </aside>
 
     <main class="chartWrap">
       <div id="chart" class="chart"></div>
     </main>
   </div>
-
   <script src="script.js"></script>
 </body>
 </html>
