@@ -98,7 +98,6 @@ function render() {
     groups.get(outcome).push(row);
   }
 
-  // Fixed colors
   const colorMap = {
     "Died": "#1f77b4",
     "Survived": "#ff7f0e"
@@ -110,7 +109,7 @@ function render() {
       type: "scattergl",
       mode: "markers",
       name: outcome,
-      showlegend: true, // ✅ legend ON (we place it outside)
+      showlegend: true,
       x: rows.map(r => r[xCol]),
       y: rows.map(r => r[yCol]),
       text: rows.map(r =>
@@ -135,20 +134,22 @@ function render() {
     return;
   }
 
-  // ✅ IMPORTANT FIX: ranges based on data ONLY (no forced 0)
+  // ---- ranges
   const xs = traces.flatMap(t => t.x);
   const ys = traces.flatMap(t => t.y);
 
   const xmin = Math.min(...xs);
   const xmax = Math.max(...xs);
-  const ymin = Math.min(...ys);
   const ymax = Math.max(...ys);
 
   const xpad = (xmax - xmin) * 0.05 || 1;
-  const ypad = (ymax - ymin) * 0.05 || 1;
+  const ypad = ymax * 0.05 || 1;
 
+  // ✅ X range: data-based
   fullRanges.x = [xmin - xpad, xmax + xpad];
-  fullRanges.y = [ymin - ypad, ymax + ypad];
+
+  // ✅ Y range: MUST start from 0
+  fullRanges.y = [0, ymax + ypad];
 
   const axisCommon = {
     showgrid: false,
@@ -157,17 +158,20 @@ function render() {
     linewidth: 1.8,
     linecolor: "#111",
 
-    // ✅ remove numeric ticks/labels completely
-    ticks: "",
-    showticklabels: false,
+    // ✅ bring back scale: ticks + numbers
+    ticks: "outside",
+    ticklen: 6,
+    tickwidth: 1.2,
+    tickcolor: "#111",
+    showticklabels: true,
 
     // ✅ more space between axis and label
     title_standoff: 26
   };
 
   const layout = {
-    // ✅ give space on the right for the legend
-    margin: { l: 70, r: 140, t: 30, b: 75 },
+    // ✅ room on the right for legend
+    margin: { l: 80, r: 150, t: 30, b: 75 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
@@ -180,7 +184,9 @@ function render() {
     yaxis: {
       ...axisCommon,
       title: { text: yCol },
-      range: fullRanges.y
+      range: fullRanges.y,
+      // ensures ticks start nicely from 0
+      rangemode: "tozero"
     },
 
     // ✅ Legend outside plot, top-right
@@ -194,8 +200,7 @@ function render() {
       font: { size: 14 }
     },
 
-    // ✅ Show a "0" at the axis intersection visually WITHOUT changing ranges
-    // Put it at bottom-left of the plotting area (paper coords)
+    // ✅ write "0" exactly at the intersection (bottom-left corner)
     annotations: [
       {
         xref: "paper",
@@ -204,10 +209,10 @@ function render() {
         y: 0,
         text: "0",
         showarrow: false,
-        xanchor: "left",
-        yanchor: "bottom",
-        xshift: 6,
-        yshift: 6,
+        xanchor: "right",
+        yanchor: "top",
+        xshift: -6,
+        yshift: -6,
         font: { size: 12, color: "#111" }
       }
     ]
