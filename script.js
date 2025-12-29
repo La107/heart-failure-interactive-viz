@@ -198,24 +198,21 @@ function render() {
 
     // ✅ X axis numbers, but avoid showing "0" at the origin
    xaxis: {
-    ...axisCommon,
-    title: { text: xCol },
-    range: fullRanges.x,
-    tickmode: "linear",
-    dtick: xStep,
-  
-    scaleanchor: "y",   // ✅ link X scale to Y
-    scaleratio: 1       // ✅ 1:1 ratio
-  },
-  
-  yaxis: {
-    ...axisCommon,
-    title: { text: yCol },
-    range: fullRanges.y,
-    tickmode: "linear",
-    tick0: 0,
-    dtick: yStep
-  },
+  ...axisCommon,
+  title: { text: xCol },
+  range: fullRanges.x,
+  tickmode: "linear",
+  dtick: xStep
+},
+
+yaxis: {
+  ...axisCommon,
+  title: { text: yCol },
+  range: fullRanges.y,
+  tickmode: "linear",
+  tick0: 0,
+  dtick: yStep
+},
 
 
     legend: {
