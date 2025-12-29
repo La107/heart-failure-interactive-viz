@@ -98,7 +98,6 @@ function render() {
     groups.get(outcome).push(row);
   }
 
-  // fixed colors to match legend swatches
   const colorMap = {
     "Died": "#1f77b4",
     "Survived": "#ff7f0e"
@@ -109,8 +108,8 @@ function render() {
     traces.push({
       type: "scattergl",
       mode: "markers",
-      name: outcome,
-      showlegend: false, // ✅ legend removed from plot
+      name: outcome,          // ✅ legend label
+      showlegend: true,       // ✅ legend ON
       x: rows.map(r => r[xCol]),
       y: rows.map(r => r[yCol]),
       text: rows.map(r =>
@@ -130,12 +129,6 @@ function render() {
     });
   }
 
-  if (!traces.length) {
-    statusLeft.textContent = "No valid points for these axis selections.";
-    return;
-  }
-
-  // --- ranges: force axes to include 0 and cross at 0
   const xs = traces.flatMap(t => t.x);
   const ys = traces.flatMap(t => t.y);
 
@@ -156,27 +149,20 @@ function render() {
     showline: true,
     linewidth: 1.8,
     linecolor: "#111",
-
-    // ✅ remove ticks and numeric labels
     ticks: "",
     showticklabels: false,
-
-    // ✅ more space between axis and title
     title_standoff: 24
   };
 
   const layout = {
-    margin: { l: 70, r: 20, t: 20, b: 75 },
+    margin: { l: 70, r: 120, t: 40, b: 75 }, // 👉 spazio per la legenda
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
     xaxis: {
       ...axisCommon,
       title: { text: xCol },
-      range: fullRanges.x,
-
-      // ✅ axis crosses at (0,0)
-      anchor: "y"
+      range: fullRanges.x
     },
 
     yaxis: {
@@ -185,7 +171,17 @@ function render() {
       range: fullRanges.y
     },
 
-    // ✅ add a visible "0" at the intersection (since tick labels are off)
+    // ✅ LEGEND: fuori dal plot, top-right
+    legend: {
+      x: 1.02,
+      y: 1,
+      xanchor: "left",
+      yanchor: "top",
+      bgcolor: "rgba(255,255,255,0.9)",
+      borderwidth: 0,
+      font: { size: 14 }
+    },
+
     annotations: [
       {
         x: 0,
@@ -216,7 +212,6 @@ function zoom(factor) {
 
   const xRange = (xr && xr.length === 2) ? xr : fullRanges.x;
   const yRange = (yr && yr.length === 2) ? yr : fullRanges.y;
-  if (!xRange || !yRange) return;
 
   const xMid = (xRange[0] + xRange[1]) / 2;
   const yMid = (yRange[0] + yRange[1]) / 2;
@@ -231,7 +226,6 @@ function zoom(factor) {
 }
 
 function resetZoom() {
-  if (!fullRanges.x || !fullRanges.y) return;
   Plotly.relayout(chartDiv, {
     "xaxis.range": fullRanges.x,
     "yaxis.range": fullRanges.y
