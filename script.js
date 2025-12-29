@@ -26,7 +26,7 @@ const ySelect  = document.getElementById("ySelect");
 const chartDiv = document.getElementById("chart");
 const statusLeft = document.getElementById("statusLeft");
 
-// Event Listeners for UI
+// UI Button Listeners
 document.getElementById("zoomInBtn").addEventListener("click", () => zoom(0.8));
 document.getElementById("zoomOutBtn").addEventListener("click", () => zoom(1.25));
 document.getElementById("resetBtn").addEventListener("click", resetZoom);
@@ -56,7 +56,6 @@ function init() {
 
 async function loadCSV() {
   statusLeft.textContent = "Loading data…";
-
   try {
     const res = await fetch(`${CSV_FILE}?v=${Date.now()}`, { cache: "no-store" });
     if (!res.ok) throw new Error(`CSV not found (HTTP ${res.status}).`);
@@ -70,7 +69,6 @@ async function loadCSV() {
 
     rawData = parsed.data || [];
     statusLeft.textContent = `Loaded ${rawData.length} rows.`;
-
     render();
   } catch (err) {
     console.error(err);
@@ -83,7 +81,6 @@ function render() {
 
   const xCol = xSelect.value;
   const yCol = ySelect.value;
-
   const groups = new Map();
 
   for (const row of rawData) {
@@ -151,13 +148,13 @@ function render() {
     linewidth: 1.8,
     linecolor: "#111",
     ticks: "",
-    showticklabels: true, // Set to true if you want to see numbers on axes
+    showticklabels: true,
     title_standoff: 24
   };
 
   const layout = {
-    // Reduced right margin since legend is now internal
-    margin: { l: 70, r: 40, t: 40, b: 75 }, 
+    // Standard margins since legend is now inside the graph
+    margin: { l: 60, r: 40, t: 40, b: 60 }, 
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
@@ -173,16 +170,16 @@ function render() {
       range: fullRanges.y
     },
 
-    // ✅ LEGEND: Positioned inside the top-right of the graph
+    // ✅ LEGEND: Specifically placed on the top-right INSIDE the graph
     legend: {
-      x: 0.98,
-      y: 0.98,
-      xanchor: "right",
-      yanchor: "top",
-      bgcolor: "rgba(255,255,255,0.7)", // Semi-transparent
+      x: 0.98,            // 98% of the way to the right
+      y: 0.98,            // 98% of the way to the top
+      xanchor: "right",   // Anchor right side of box to x coordinate
+      yanchor: "top",     // Anchor top side of box to y coordinate
+      bgcolor: "rgba(255,255,255,0.7)", // Semi-transparent white
       borderwidth: 1,
       bordercolor: "#ccc",
-      font: { size: 14 }
+      font: { size: 13 }
     },
 
     annotations: [
@@ -247,20 +244,17 @@ function saveImage(format) {
 
 async function savePDF() {
   const { jsPDF } = window.jspdf;
-
   const dataUrl = await Plotly.toImage(chartDiv, {
     format: "png",
     height: 700,
     width: 1000,
     scale: 2
   });
-
   const pdf = new jsPDF({
     orientation: "landscape",
     unit: "pt",
     format: [1000, 700]
   });
-
   pdf.addImage(dataUrl, "PNG", 0, 0, 1000, 700);
   pdf.save(`heart_failure_scatter_${xSelect.value}_vs_${ySelect.value}.pdf`);
 }
