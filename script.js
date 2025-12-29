@@ -1,7 +1,5 @@
-// ========= Configuration =========
 const CSV_FILE = "heart_failure_clinical_records_dataset_cleaned.csv";
 
-// exactly your requested columns (in this order)
 const COLUMNS = [
   "age",
   "anaemia",
@@ -20,219 +18,138 @@ const COLUMNS = [
 
 const OUTCOME_COL = "death_label";
 
-// ========= State =========
 let rawData = [];
 let fullRanges = { x: null, y: null };
 
-// ========= DOM =========
 const xSelect = document.getElementById("xSelect");
 const ySelect = document.getElementById("ySelect");
-const statusEl = document.getElementById("status");
 const chartDiv = document.getElementById("chart");
+const statusEl = document.getElementById("status");
 
-document.getElementById("zoomInBtn").addEventListener("click", () => zoom(0.8));
-document.getElementById("zoomOutBtn").addEventListener("click", () => zoom(1.25));
-document.getElementById("resetBtn").addEventListener("click", resetZoom);
+document.getElementById("zoomInBtn").onclick = () => zoom(0.8);
+document.getElementById("zoomOutBtn").onclick = () => zoom(1.25);
+document.getElementById("resetBtn").onclick = resetZoom;
 
-document.getElementById("pngBtn").addEventListener("click", () => saveImage("png"));
-document.getElementById("jpegBtn").addEventListener("click", () => saveImage("jpeg"));
-document.getElementById("pdfBtn").addEventListener("click", savePDF);
+document.getElementById("pngBtn").onclick = () => saveImage("png");
+document.getElementById("jpegBtn").onclick = () => saveImage("jpeg");
+document.getElementById("pdfBtn").onclick = savePDF;
 
-// ========= Init =========
-populateSelects();
-loadCSV();
+init();
 
-// ========= Functions =========
-function populateSelects() {
-  // only numeric columns for axes (your list includes labels)
-  const axisCandidates = COLUMNS.filter(c => !["sex_label", "death_label"].includes(c));
+function init() {
+  const numericCols = COLUMNS.filter(c => !["sex_label", "death_label"].includes(c));
 
-  for (const col of axisCandidates) {
-    const optX = document.createElement("option");
-    optX.value = col;
-    optX.textContent = col;
-    xSelect.appendChild(optX);
+  numericCols.forEach(col => {
+    xSelect.add(new Option(col, col));
+    ySelect.add(new Option(col, col));
+  });
 
-    const optY = document.createElement("option");
-    optY.value = col;
-    optY.textContent = col;
-    ySelect.appendChild(optY);
-  }
-
-  // sensible defaults
   xSelect.value = "age";
   ySelect.value = "ejection_fraction";
 
-  xSelect.addEventListener("change", render);
-  ySelect.addEventListener("change", render);
+  xSelect.onchange = render;
+  ySelect.onchange = render;
+
+  loadCSV();
 }
 
 async function loadCSV() {
-  statusEl.textContent = "Loading data…";
+  const res = await fetch(CSV_FILE);
+  const text = await res.text();
 
-  try {
-    const res = await fetch(CSV_FILE, { cache: "no-store" });
-    if (!res.ok) throw new Error(`Could not fetch ${CSV_FILE} (HTTP ${res.status})`);
+  const parsed = Papa.parse(text, {
+    header: true,
+    dynamicTyping: true
+  });
 
-    const csvText = await res.text();
-
-    const parsed = Papa.parse(csvText, {
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true
-    });
-
-    if (parsed.errors?.length) {
-      console.warn("PapaParse errors:", parsed.errors);
-    }
-
-    rawData = parsed.data;
-
-    statusEl.textContent = `Loaded ${rawData.length} rows.`;
-    render();
-  } catch (err) {
-    console.error(err);
-    statusEl.textContent = `Error: ${err.message}`;
-  }
-}
-
-function getOutcomeTraces(xCol, yCol) {
-  const groups = new Map();
-
-  for (const row of rawData) {
-    const x = row[xCol];
-    const y = row[yCol];
-    const outcome = row[OUTCOME_COL];
-
-    // keep only valid numeric points
-    if (typeof x !== "number" || Number.isNaN(x)) continue;
-    if (typeof y !== "number" || Number.isNaN(y)) continue;
-    if (!outcome) continue;
-
-    if (!groups.has(outcome)) groups.set(outcome, []);
-    groups.get(outcome).push(row);
-  }
-
-  const traces = [];
-  for (const [outcome, rows] of groups.entries()) {
-    traces.push({
-      type: "scattergl",
-      mode: "markers",
-      name: outcome,
-      x: rows.map(r => r[xCol]),
-      y: rows.map(r => r[yCol]),
-      text: rows.map(r => {
-        // hover details (you can add/remove fields freely)
-        return [
-          `${OUTCOME_COL}: ${r[OUTCOME_COL]}`,
-          `sex_label: ${r.sex_label}`,
-          `age: ${r.age}`,
-          `time: ${r.time}`,
-          `${xCol}: ${r[xCol]}`,
-          `${yCol}: ${r[yCol]}`
-        ].join("<br>");
-      }),
-      hovertemplate: "%{text}<extra></extra>",
-      marker: {
-        size: 8,
-        opacity: 0.75
-      }
-    });
-  }
-
-  return traces;
-}
-
-function computeFullRanges(traces) {
-  const xs = traces.flatMap(t => t.x);
-  const ys = traces.flatMap(t => t.y);
-
-  const xmin = Math.min(...xs), xmax = Math.max(...xs);
-  const ymin = Math.min(...ys), ymax = Math.max(...ys);
-
-  // add small padding
-  const xpad = (xmax - xmin) * 0.05 || 1;
-  const ypad = (ymax - ymin) * 0.05 || 1;
-
-  fullRanges.x = [xmin - xpad, xmax + xpad];
-  fullRanges.y = [ymin - ypad, ymax + ypad];
+  rawData = parsed.data;
+  statusEl.textContent = `Loaded ${rawData.length} rows`;
+  render();
 }
 
 function render() {
-  if (!rawData?.length) return;
-
   const xCol = xSelect.value;
   const yCol = ySelect.value;
 
-  const traces = getOutcomeTraces(xCol, yCol);
-  if (!traces.length) {
-    statusEl.textContent = "No valid points for these axis selections.";
-    return;
-  }
+  const groups = {};
 
-  computeFullRanges(traces);
+  rawData.forEach(d => {
+    if (typeof d[xCol] !== "number" || typeof d[yCol] !== "number") return;
+    const key = d[OUTCOME_COL];
+    if (!groups[key]) groups[key] = [];
+    groups[key].push(d);
+  });
+
+  const traces = Object.entries(groups).map(([key, rows]) => ({
+    type: "scattergl",
+    mode: "markers",
+    name: key,
+    x: rows.map(r => r[xCol]),
+    y: rows.map(r => r[yCol]),
+    text: rows.map(r =>
+      `${OUTCOME_COL}: ${r[OUTCOME_COL]}<br>` +
+      `age: ${r.age}<br>` +
+      `sex: ${r.sex_label}`
+    ),
+    hovertemplate: "%{text}<extra></extra>",
+    marker: { size: 8, opacity: 0.75 }
+  }));
+
+  const xs = traces.flatMap(t => t.x);
+  const ys = traces.flatMap(t => t.y);
+  fullRanges.x = [Math.min(...xs), Math.max(...xs)];
+  fullRanges.y = [Math.min(...ys), Math.max(...ys)];
 
   const layout = {
-    title: { text: "Heart Failure – Interactive Scatter Plot", x: 0.02 },
-    margin: { l: 60, r: 20, t: 60, b: 55 },
+    margin: { l: 60, r: 20, t: 40, b: 55 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
+
     xaxis: {
-      title: { text: xCol },
-      range: fullRanges.x,
+      title: xCol,
+      showgrid: false,      // ❌ gridlines removed
       zeroline: false,
-      gridcolor: "rgba(255,255,255,0.08)"
+      showline: true,       // ✅ axis line ON
+      linewidth: 1.5,
+      linecolor: "#ffffff",
+      mirror: false
     },
+
     yaxis: {
-      title: { text: yCol },
-      range: fullRanges.y,
+      title: yCol,
+      showgrid: false,      // ❌ gridlines removed
       zeroline: false,
-      gridcolor: "rgba(255,255,255,0.08)"
+      showline: true,       // ✅ axis line ON
+      linewidth: 1.5,
+      linecolor: "#ffffff",
+      mirror: false
     },
+
     legend: {
-      x: 0.02,
-      y: 0.98,
-      bgcolor: "rgba(0,0,0,0.25)",
-      bordercolor: "rgba(255,255,255,0.12)",
-      borderwidth: 1
+      bgcolor: "rgba(0,0,0,0.3)",
+      borderwidth: 0
     }
   };
 
-  const config = {
+  Plotly.newPlot(chartDiv, traces, layout, {
     responsive: true,
-    displaylogo: false,
-    // Keep Plotly toolbar available (extra zoom/pan/lasso + built-in PNG export)
-    modeBarButtonsToRemove: ["select2d", "autoScale2d"] // optional
-  };
-
-  Plotly.newPlot(chartDiv, traces, layout, config);
+    displaylogo: false
+  });
 }
 
-function zoom(factor) {
-  const gd = chartDiv;
+function zoom(f) {
+  const xr = chartDiv.layout.xaxis.range;
+  const yr = chartDiv.layout.yaxis.range;
+  const xm = (xr[0] + xr[1]) / 2;
+  const ym = (yr[0] + yr[1]) / 2;
 
-  const xr = gd.layout?.xaxis?.range;
-  const yr = gd.layout?.yaxis?.range;
-
-  const xRange = (xr && xr.length === 2) ? xr : fullRanges.x;
-  const yRange = (yr && yr.length === 2) ? yr : fullRanges.y;
-
-  if (!xRange || !yRange) return;
-
-  const xMid = (xRange[0] + xRange[1]) / 2;
-  const yMid = (yRange[0] + yRange[1]) / 2;
-
-  const xHalf = (xRange[1] - xRange[0]) / 2 * factor;
-  const yHalf = (yRange[1] - yRange[0]) / 2 * factor;
-
-  Plotly.relayout(gd, {
-    "xaxis.range": [xMid - xHalf, xMid + xHalf],
-    "yaxis.range": [yMid - yHalf, yMid + yHalf]
+  Plotly.relayout(chartDiv, {
+    "xaxis.range": [xm - (xr[1] - xr[0]) * f / 2, xm + (xr[1] - xr[0]) * f / 2],
+    "yaxis.range": [ym - (yr[1] - yr[0]) * f / 2, ym + (yr[1] - yr[0]) * f / 2]
   });
 }
 
 function resetZoom() {
-  if (!fullRanges.x || !fullRanges.y) return;
   Plotly.relayout(chartDiv, {
     "xaxis.range": fullRanges.x,
     "yaxis.range": fullRanges.y
@@ -240,33 +157,19 @@ function resetZoom() {
 }
 
 function saveImage(format) {
-  // Plotly supports png/jpeg well in-browser
   Plotly.downloadImage(chartDiv, {
     format,
-    filename: `heart_failure_scatter_${xSelect.value}_vs_${ySelect.value}`,
-    height: 700,
+    filename: "heart_failure_scatter",
     width: 1000,
+    height: 700,
     scale: 2
   });
 }
 
 async function savePDF() {
-  // Make a high-res PNG, then embed into a PDF (browser-only, no server)
+  const img = await Plotly.toImage(chartDiv, { format: "png", width: 1000, height: 700, scale: 2 });
   const { jsPDF } = window.jspdf;
-
-  const dataUrl = await Plotly.toImage(chartDiv, {
-    format: "png",
-    height: 700,
-    width: 1000,
-    scale: 2
-  });
-
-  const pdf = new jsPDF({
-    orientation: "landscape",
-    unit: "pt",
-    format: [1000, 700]
-  });
-
-  pdf.addImage(dataUrl, "PNG", 0, 0, 1000, 700);
-  pdf.save(`heart_failure_scatter_${xSelect.value}_vs_${ySelect.value}.pdf`);
+  const pdf = new jsPDF("landscape", "pt", [1000, 700]);
+  pdf.addImage(img, "PNG", 0, 0, 1000, 700);
+  pdf.save("heart_failure_scatter.pdf");
 }
