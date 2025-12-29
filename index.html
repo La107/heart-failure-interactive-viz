@@ -36,17 +36,24 @@
         <button id="pdfBtn" type="button">Save PDF</button>
       </div>
 
-      <h2>Local test (optional)</h2>
-      <p class="hint">
-        If you opened this page as a local file (<code>file://</code>), the CSV cannot be fetched.
-        Use GitHub Pages, or upload the CSV here:
-      </p>
-      <input id="fileInput" type="file" accept=".csv" />
+      <h2>Status</h2>
+      <div id="statusLeft" class="statusLeft">Loading…</div>
+
+      <h2>Outcome</h2>
+      <div class="legendLeft">
+        <div class="legendItem">
+          <span class="swatch swatchDied"></span>
+          <span>Died</span>
+        </div>
+        <div class="legendItem">
+          <span class="swatch swatchSurvived"></span>
+          <span>Survived</span>
+        </div>
+      </div>
     </aside>
 
     <main class="chartWrap">
       <div id="chart" class="chart"></div>
-      <div id="status" class="status">Loading data…</div>
     </main>
   </div>
 
