@@ -1,1 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Heart Failure Interactive Explorer</title>
+
+  <!-- Plotly + D3 -->
+  <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
+  <script src="https://d3js.org/d3.v7.min.js"></script>
+
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+  <div class="container">
+    <aside class="controls">
+      <h2>Controls</h2>
+
+      <label>X-axis</label>
+      <select id="xSelect"></select>
+
+      <label>Y-axis</label>
+      <select id="ySelect"></select>
+
+      <h3>Sex</h3>
+      <label><input type="checkbox" id="sexFemale" checked> Female</label>
+      <label><input type="checkbox" id="sexMale" checked> Male</label>
+
+      <h3>Outcome</h3>
+      <label><input type="checkbox" id="outcomeSurvived" checked> Survived</label>
+      <label><input type="checkbox" id="outcomeDied" checked> Died</label>
+
+      <h3>Clinical conditions</h3>
+      <label><input type="checkbox" id="fAnaemia"> Anaemia</label>
+      <label><input type="checkbox" id="fDiabetes"> Diabetes</label>
+      <label><input type="checkbox" id="fHBP"> High blood pressure</label>
+      <label><input type="checkbox" id="fSmoking"> Smoking</label>
+
+      <button id="resetBtn">Reset zoom</button>
+
+      <p class="count">
+        Showing <span id="countShown">0</span> /
+        <span id="countTotal">0</span> records
+      </p>
+    </aside>
+
+    <main class="viz">
+      <div id="chart"></div>
+    </main>
+  </div>
+
+  <!-- JS -->
+  <script src="script.js"></script>
+</body>
+</html>
 
