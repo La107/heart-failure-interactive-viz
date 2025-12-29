@@ -2,7 +2,6 @@
   --bg: #ffffff;
   --panel: #ffffff;
   --text: #111;
-  --muted: #555;
   --border: rgba(0,0,0,0.12);
 }
 
@@ -10,10 +9,10 @@
 
 body {
   margin: 0;
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  font-family: system-ui, sans-serif;
   background: var(--bg);
   color: var(--text);
-  overflow: hidden; /* Prevents double scrollbars */
+  overflow: hidden;
 }
 
 .container {
@@ -26,86 +25,39 @@ body {
   padding: 22px;
   background: var(--panel);
   border-right: 1px solid var(--border);
-  overflow-y: auto; /* Allows sidebar to scroll if many controls are added */
 }
 
-.controls h1 {
-  margin: 0 0 18px;
-  font-size: 32px; /* Slightly reduced for better sidebar fit */
-  font-weight: 800;
-  line-height: 1.1;
-}
+.controls h1 { margin: 0 0 18px; font-size: 32px; font-weight: 800; }
+.controls h2 { margin: 18px 0 10px; font-size: 18px; font-weight: 800; }
 
-.controls h2 {
-  margin: 24px 0 10px;
-  font-size: 18px;
-  font-weight: 800;
-  border-top: 1px solid var(--border);
-  padding-top: 15px;
-}
-
-label {
-  display: block;
-  margin: 12px 0 6px;
-  color: var(--text);
-  font-weight: 700;
-}
+label { display: block; margin: 12px 0 6px; font-weight: 700; }
 
 select {
   width: 100%;
   padding: 12px;
   border-radius: 8px;
   border: 1px solid var(--border);
-  background: #fff;
-  color: var(--text);
-  font-size: 16px;
 }
 
 .buttonRow {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 8px;
-  margin-top: 10px;
+  gap: 10px;
 }
 
 button {
-  padding: 10px;
+  padding: 12px;
   border-radius: 8px;
   border: 1px solid rgba(0,0,0,0.2);
-  background: #f8f8f8;
-  color: var(--text);
   cursor: pointer;
-  font-size: 16px;
-  transition: background 0.2s;
 }
 
-button:hover {
-  background: #eeeeee;
-}
-
-.chartWrap {
-  padding: 0;
-  background: #fff;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.chart {
-  width: 100%;
-  height: 100vh;
-}
+.chartWrap { padding: 0; }
+.chart { width: 100%; height: 100vh; }
 
 .statusLeft {
-  padding: 10px 12px;
+  padding: 10px;
   border: 1px solid var(--border);
   border-radius: 8px;
-  color: var(--muted);
-  font-size: 14px;
   background: rgba(0,0,0,0.02);
 }
-
-/* REMOVED: .legendLeft, .legendItem, .swatch, etc. 
-   These are no longer needed because the legend is now 
-   drawn inside the Plotly graph area.
-*/
