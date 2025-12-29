@@ -106,4 +106,9 @@ button#resetZoom:hover {
 }
 /* Hide any status text (e.g., record count) */
 #status { display: none; }
+/* Hide the text under Reset zoom (Displayed ... points) */
+#status,
+.status {
+  display: none !important;
+}
 
