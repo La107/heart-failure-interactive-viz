@@ -13,30 +13,35 @@ body {
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
   background: var(--bg);
   color: var(--text);
+  overflow: hidden; /* Prevents double scrollbars */
 }
 
 .container {
   display: grid;
   grid-template-columns: 340px 1fr;
-  min-height: 100vh;
+  height: 100vh;
 }
 
 .controls {
   padding: 22px;
   background: var(--panel);
   border-right: 1px solid var(--border);
+  overflow-y: auto; /* Allows sidebar to scroll if many controls are added */
 }
 
 .controls h1 {
   margin: 0 0 18px;
-  font-size: 44px;
+  font-size: 32px; /* Slightly reduced for better sidebar fit */
   font-weight: 800;
+  line-height: 1.1;
 }
 
 .controls h2 {
-  margin: 18px 0 10px;
+  margin: 24px 0 10px;
   font-size: 18px;
   font-weight: 800;
+  border-top: 1px solid var(--border);
+  padding-top: 15px;
 }
 
 label {
@@ -53,31 +58,37 @@ select {
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
+  font-size: 16px;
 }
 
 .buttonRow {
   display: grid;
   grid-template-columns: 1fr;
-  gap: 12px;
-  margin-top: 14px;
+  gap: 8px;
+  margin-top: 10px;
 }
 
 button {
-  padding: 12px;
+  padding: 10px;
   border-radius: 8px;
-  border: 1px solid rgba(0,0,0,0.35);
-  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.2);
+  background: #f8f8f8;
   color: var(--text);
   cursor: pointer;
-  font-size: 18px;
+  font-size: 16px;
+  transition: background 0.2s;
 }
 
 button:hover {
-  background: rgba(0,0,0,0.06);
+  background: #eeeeee;
 }
 
 .chartWrap {
   padding: 0;
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .chart {
@@ -94,28 +105,7 @@ button:hover {
   background: rgba(0,0,0,0.02);
 }
 
-.legendLeft {
-  display: grid;
-  gap: 10px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: rgba(0,0,0,0.02);
-}
-
-.legendItem {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  font-size: 16px;
-}
-
-.swatch {
-  width: 14px;
-  height: 14px;
-  border-radius: 50%;
-  display: inline-block;
-}
-
-.swatchDied { background: #1f77b4; }
-.swatchSurvived { background: #ff7f0e; }
+/* REMOVED: .legendLeft, .legendItem, .swatch, etc. 
+   These are no longer needed because the legend is now 
+   drawn inside the Plotly graph area.
+*/
