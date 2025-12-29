@@ -1,3 +1,5 @@
+// script.js — FULL VERSION (with axis scales + y starting at 0 + legend outside top-right)
+
 const CSV_FILE = "./heart_failure_clinical_records_dataset_cleaned.csv";
 
 const COLUMNS = [
@@ -21,8 +23,8 @@ const OUTCOME_COL = "death_label";
 let rawData = [];
 let fullRanges = { x: null, y: null };
 
-const xSelect  = document.getElementById("xSelect");
-const ySelect  = document.getElementById("ySelect");
+const xSelect = document.getElementById("xSelect");
+const ySelect = document.getElementById("ySelect");
 const chartDiv = document.getElementById("chart");
 const statusLeft = document.getElementById("statusLeft");
 
@@ -37,9 +39,9 @@ document.getElementById("pdfBtn").addEventListener("click", savePDF);
 init();
 
 function init() {
-  const axisCandidates = COLUMNS.filter(c => !["sex_label", "death_label"].includes(c));
+  const axisCandidates = COLUMNS.filter((c) => !["sex_label", "death_label"].includes(c));
 
-  axisCandidates.forEach(col => {
+  axisCandidates.forEach((col) => {
     xSelect.add(new Option(col, col));
     ySelect.add(new Option(col, col));
   });
@@ -99,8 +101,8 @@ function render() {
   }
 
   const colorMap = {
-    "Died": "#1f77b4",
-    "Survived": "#ff7f0e"
+    Died: "#1f77b4",
+    Survived: "#ff7f0e"
   };
 
   const traces = [];
@@ -110,15 +112,16 @@ function render() {
       mode: "markers",
       name: outcome,
       showlegend: true,
-      x: rows.map(r => r[xCol]),
-      y: rows.map(r => r[yCol]),
-      text: rows.map(r =>
-        `${OUTCOME_COL}: ${r[OUTCOME_COL]}<br>` +
-        `sex_label: ${r.sex_label}<br>` +
-        `age: ${r.age}<br>` +
-        `time: ${r.time}<br>` +
-        `${xCol}: ${r[xCol]}<br>` +
-        `${yCol}: ${r[yCol]}`
+      x: rows.map((r) => r[xCol]),
+      y: rows.map((r) => r[yCol]),
+      text: rows.map(
+        (r) =>
+          `${OUTCOME_COL}: ${r[OUTCOME_COL]}<br>` +
+          `sex_label: ${r.sex_label}<br>` +
+          `age: ${r.age}<br>` +
+          `time: ${r.time}<br>` +
+          `${xCol}: ${r[xCol]}<br>` +
+          `${yCol}: ${r[yCol]}`
       ),
       hovertemplate: "%{text}<extra></extra>",
       marker: {
@@ -134,9 +137,9 @@ function render() {
     return;
   }
 
-  // ---- ranges
-  const xs = traces.flatMap(t => t.x);
-  const ys = traces.flatMap(t => t.y);
+  // ----- ranges: X based on data, Y forced to start at 0
+  const xs = traces.flatMap((t) => t.x);
+  const ys = traces.flatMap((t) => t.y);
 
   const xmin = Math.min(...xs);
   const xmax = Math.max(...xs);
@@ -145,10 +148,7 @@ function render() {
   const xpad = (xmax - xmin) * 0.05 || 1;
   const ypad = ymax * 0.05 || 1;
 
-  // ✅ X range: data-based
   fullRanges.x = [xmin - xpad, xmax + xpad];
-
-  // ✅ Y range: MUST start from 0
   fullRanges.y = [0, ymax + ypad];
 
   const axisCommon = {
@@ -158,20 +158,19 @@ function render() {
     linewidth: 1.8,
     linecolor: "#111",
 
-    // ✅ bring back scale: ticks + numbers
     ticks: "outside",
     ticklen: 6,
     tickwidth: 1.2,
     tickcolor: "#111",
-    showticklabels: true,
 
-    // ✅ more space between axis and label
-    title_standoff: 26
+    showticklabels: true,
+    tickfont: { size: 12, color: "#111" },
+
+    title_standoff: 30
   };
 
   const layout = {
-    // ✅ room on the right for legend
-    margin: { l: 80, r: 150, t: 30, b: 75 },
+    margin: { l: 100, r: 150, t: 30, b: 100 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
@@ -185,11 +184,9 @@ function render() {
       ...axisCommon,
       title: { text: yCol },
       range: fullRanges.y,
-      // ensures ticks start nicely from 0
       rangemode: "tozero"
     },
 
-    // ✅ Legend outside plot, top-right
     legend: {
       x: 1.02,
       y: 1,
@@ -200,7 +197,7 @@ function render() {
       font: { size: 14 }
     },
 
-    // ✅ write "0" exactly at the intersection (bottom-left corner)
+    // write "0" at the axis intersection (bottom-left)
     annotations: [
       {
         xref: "paper",
@@ -211,8 +208,8 @@ function render() {
         showarrow: false,
         xanchor: "right",
         yanchor: "top",
-        xshift: -6,
-        yshift: -6,
+        xshift: -8,
+        yshift: -8,
         font: { size: 12, color: "#111" }
       }
     ]
@@ -229,15 +226,15 @@ function zoom(factor) {
   const xr = gd.layout?.xaxis?.range;
   const yr = gd.layout?.yaxis?.range;
 
-  const xRange = (xr && xr.length === 2) ? xr : fullRanges.x;
-  const yRange = (yr && yr.length === 2) ? yr : fullRanges.y;
+  const xRange = xr && xr.length === 2 ? xr : fullRanges.x;
+  const yRange = yr && yr.length === 2 ? yr : fullRanges.y;
   if (!xRange || !yRange) return;
 
   const xMid = (xRange[0] + xRange[1]) / 2;
   const yMid = (yRange[0] + yRange[1]) / 2;
 
-  const xHalf = (xRange[1] - xRange[0]) / 2 * factor;
-  const yHalf = (yRange[1] - yRange[0]) / 2 * factor;
+  const xHalf = ((xRange[1] - xRange[0]) / 2) * factor;
+  const yHalf = ((yRange[1] - yRange[0]) / 2) * factor;
 
   Plotly.relayout(gd, {
     "xaxis.range": [xMid - xHalf, xMid + xHalf],
