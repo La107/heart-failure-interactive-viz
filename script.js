@@ -1,4 +1,4 @@
-// script.js — FULL WORKING VERSION (axis numbers ON + y starts at 0)
+// script.js — FINAL STABLE VERSION
 
 const CSV_FILE = "./heart_failure_clinical_records_dataset_cleaned.csv";
 
@@ -38,8 +38,12 @@ document.getElementById("pdfBtn").addEventListener("click", savePDF);
 
 init();
 
+/* ---------------- INIT ---------------- */
+
 function init() {
-  const axisCandidates = COLUMNS.filter(c => !["sex_label", "death_label"].includes(c));
+  const axisCandidates = COLUMNS.filter(
+    c => !["sex_label", "death_label"].includes(c)
+  );
 
   axisCandidates.forEach(col => {
     xSelect.add(new Option(col, col));
@@ -55,12 +59,14 @@ function init() {
   loadCSV();
 }
 
+/* ---------------- DATA ---------------- */
+
 async function loadCSV() {
-  if (statusLeft) statusLeft.textContent = "Loading data…";
+  statusLeft.textContent = "Loading data…";
 
   try {
     const res = await fetch(`${CSV_FILE}?v=${Date.now()}`, { cache: "no-store" });
-    if (!res.ok) throw new Error(`CSV not found (HTTP ${res.status}).`);
+    if (!res.ok) throw new Error(`CSV not found (HTTP ${res.status})`);
 
     const csvText = await res.text();
     const parsed = Papa.parse(csvText, {
@@ -70,14 +76,27 @@ async function loadCSV() {
     });
 
     rawData = parsed.data || [];
-    if (statusLeft) statusLeft.textContent = `Loaded ${rawData.length} rows.`;
+    statusLeft.textContent = `Loaded ${rawData.length} rows.`;
 
     render();
   } catch (err) {
     console.error(err);
-    if (statusLeft) statusLeft.textContent = `Error: ${err.message}`;
+    statusLeft.textContent = `Error: ${err.message}`;
   }
 }
+
+/* ---------------- HELPERS ---------------- */
+
+function niceStep(span) {
+  if (!isFinite(span) || span <= 0) return 1;
+  const target = span / 6;
+  const pow = Math.pow(10, Math.floor(Math.log10(target)));
+  const n = target / pow;
+  const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+  return step * pow;
+}
+
+/* ---------------- RENDER ---------------- */
 
 function render() {
   if (!rawData.length) return;
@@ -106,6 +125,7 @@ function render() {
   };
 
   const traces = [];
+
   for (const [outcome, rows] of groups.entries()) {
     traces.push({
       type: "scattergl",
@@ -116,9 +136,7 @@ function render() {
       y: rows.map(r => r[yCol]),
       text: rows.map(r =>
         `${OUTCOME_COL}: ${r[OUTCOME_COL]}<br>` +
-        `sex_label: ${r.sex_label}<br>` +
-        `age: ${r.age}<br>` +
-        `time: ${r.time}<br>` +
+        `sex: ${r.sex_label}<br>` +
         `${xCol}: ${r[xCol]}<br>` +
         `${yCol}: ${r[yCol]}`
       ),
@@ -126,17 +144,11 @@ function render() {
       marker: {
         size: 8,
         opacity: 0.75,
-        color: colorMap[outcome] || "#444"
+        color: colorMap[outcome]
       }
     });
   }
 
-  if (!traces.length) {
-    if (statusLeft) statusLeft.textContent = "No valid points for these axis selections.";
-    return;
-  }
-
-  // -------- ranges
   const xs = traces.flatMap(t => t.x);
   const ys = traces.flatMap(t => t.y);
 
@@ -148,22 +160,20 @@ function render() {
   const ypad = ymax * 0.05 || 1;
 
   fullRanges.x = [xmin - xpad, xmax + xpad];
-  fullRanges.y = [0, ymax + ypad]; // ✅ y starts at 0
+  fullRanges.y = [0, ymax + ypad];
 
-  // ✅ axis numbers ON (the thing missing in your screenshot)
+  const xStep = niceStep(fullRanges.x[1] - fullRanges.x[0]);
+  const yStep = niceStep(fullRanges.y[1] - fullRanges.y[0]);
+
   const axisCommon = {
     showgrid: false,
     zeroline: false,
-
     showline: true,
     linewidth: 1.8,
     linecolor: "#111",
 
     ticks: "outside",
-    ticklen: 6,
-    tickwidth: 1.2,
-    tickcolor: "#111",
-
+    ticklen: 0,              // ← removes vertical dashes
     showticklabels: true,
     tickfont: { size: 12, color: "#111" },
 
@@ -172,28 +182,27 @@ function render() {
   };
 
   const layout = {
-    // ✅ enough room so tick labels are NOT cut
-    margin: { l: 95, r: 150, t: 25, b: 95 },
+    margin: { l: 110, r: 150, t: 25, b: 110 },
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
     xaxis: {
       ...axisCommon,
       title: { text: xCol },
-      range: fullRanges.x
+      range: fullRanges.x,
+      tickmode: "linear",
+      dtick: xStep
     },
 
     yaxis: {
       ...axisCommon,
       title: { text: yCol },
       range: fullRanges.y,
-
-      // ✅ force 0 to appear as a tick at the bottom
-      tickmode: "auto",
-      tick0: 0
+      tickmode: "linear",
+      tick0: 0,
+      dtick: yStep
     },
 
-    // legend outside top-right
     legend: {
       x: 1.02,
       y: 1,
@@ -202,24 +211,7 @@ function render() {
       bgcolor: "rgba(255,255,255,0.95)",
       borderwidth: 0,
       font: { size: 14 }
-    },
-
-    // ✅ show "0" at intersection (bottom-left of plotting area)
-    annotations: [
-      {
-        xref: "paper",
-        yref: "paper",
-        x: 0,
-        y: 0,
-        text: "0",
-        showarrow: false,
-        xanchor: "right",
-        yanchor: "top",
-        xshift: -8,
-        yshift: -8,
-        font: { size: 12, color: "#111" }
-      }
-    ]
+    }
   };
 
   Plotly.newPlot(chartDiv, traces, layout, {
@@ -228,14 +220,15 @@ function render() {
   });
 }
 
+/* ---------------- ZOOM ---------------- */
+
 function zoom(factor) {
   const gd = chartDiv;
   const xr = gd.layout?.xaxis?.range;
   const yr = gd.layout?.yaxis?.range;
 
-  const xRange = (xr && xr.length === 2) ? xr : fullRanges.x;
-  const yRange = (yr && yr.length === 2) ? yr : fullRanges.y;
-  if (!xRange || !yRange) return;
+  const xRange = xr ?? fullRanges.x;
+  const yRange = yr ?? fullRanges.y;
 
   const xMid = (xRange[0] + xRange[1]) / 2;
   const yMid = (yRange[0] + yRange[1]) / 2;
@@ -250,17 +243,18 @@ function zoom(factor) {
 }
 
 function resetZoom() {
-  if (!fullRanges.x || !fullRanges.y) return;
   Plotly.relayout(chartDiv, {
     "xaxis.range": fullRanges.x,
     "yaxis.range": fullRanges.y
   });
 }
 
+/* ---------------- EXPORT ---------------- */
+
 function saveImage(format) {
   Plotly.downloadImage(chartDiv, {
     format,
-    filename: `heart_failure_scatter_${xSelect.value}_vs_${ySelect.value}`,
+    filename: `heart_failure_${xSelect.value}_vs_${ySelect.value}`,
     height: 700,
     width: 1000,
     scale: 2
@@ -270,7 +264,7 @@ function saveImage(format) {
 async function savePDF() {
   const { jsPDF } = window.jspdf;
 
-  const dataUrl = await Plotly.toImage(chartDiv, {
+  const img = await Plotly.toImage(chartDiv, {
     format: "png",
     height: 700,
     width: 1000,
@@ -283,6 +277,6 @@ async function savePDF() {
     format: [1000, 700]
   });
 
-  pdf.addImage(dataUrl, "PNG", 0, 0, 1000, 700);
-  pdf.save(`heart_failure_scatter_${xSelect.value}_vs_${ySelect.value}.pdf`);
+  pdf.addImage(img, "PNG", 0, 0, 1000, 700);
+  pdf.save(`heart_failure_${xSelect.value}_vs_${ySelect.value}.pdf`);
 }
