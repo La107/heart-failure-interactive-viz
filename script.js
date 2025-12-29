@@ -197,24 +197,26 @@ function render() {
     plot_bgcolor: "rgba(0,0,0,0)",
 
     // ✅ X axis numbers, but avoid showing "0" at the origin
-    xaxis: {
-      ...axisCommon,
-      title: { text: xCol },
-      range: fullRanges.x,
-      tickmode: "linear",
-      dtick: xStep,
-      tick0: xStep // shifts ticks so 0 is not printed on X
-    },
+   xaxis: {
+    ...axisCommon,
+    title: { text: xCol },
+    range: fullRanges.x,
+    tickmode: "linear",
+    dtick: xStep,
+  
+    scaleanchor: "y",   // ✅ link X scale to Y
+    scaleratio: 1       // ✅ 1:1 ratio
+  },
+  
+  yaxis: {
+    ...axisCommon,
+    title: { text: yCol },
+    range: fullRanges.y,
+    tickmode: "linear",
+    tick0: 0,
+    dtick: yStep
+  },
 
-    // ✅ Y axis numbers, start from 0 (single 0 here)
-    yaxis: {
-      ...axisCommon,
-      title: { text: yCol },
-      range: fullRanges.y,
-      tickmode: "linear",
-      dtick: yStep,
-      tick0: 0
-    },
 
     legend: {
       x: 1.02,
