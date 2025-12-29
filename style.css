@@ -26,12 +26,12 @@ body {
 }
 
 .controls h1 {
-  margin: 0 0 18px 0;
+  margin: 0 0 18px;
   font-size: 34px;
 }
 
 .controls h2 {
-  margin: 18px 0 8px 0;
+  margin: 18px 0 8px;
   font-size: 20px;
 }
 
@@ -53,16 +53,10 @@ select {
   display: flex;
   gap: 10px;
   align-items: center;
-  font-weight: 500;
   margin: 8px 0;
 }
 
-.check input {
-  width: 16px;
-  height: 16px;
-}
-
-button#resetZoom {
+button {
   width: 100%;
   margin-top: 16px;
   padding: 12px;
@@ -73,8 +67,10 @@ button#resetZoom {
   cursor: pointer;
 }
 
-button#resetZoom:hover {
-  filter: brightness(0.98);
+.status {
+  margin-top: 14px;
+  font-size: 14px;
+  color: var(--muted);
 }
 
 .plot-area {
@@ -84,17 +80,4 @@ button#resetZoom:hover {
 #plot {
   width: 100%;
   height: calc(100vh - 32px);
-}
-
-@media (max-width: 900px) {
-  .container {
-    grid-template-columns: 1fr;
-  }
-  .controls {
-    border-right: none;
-    border-bottom: 1px solid var(--border);
-  }
-  #plot {
-    height: 70vh;
-  }
 }
