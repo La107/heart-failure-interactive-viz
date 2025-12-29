@@ -104,3 +104,6 @@ button#resetZoom:hover {
     height: 70vh;
   }
 }
+/* Hide any status text (e.g., record count) */
+#status { display: none; }
+
