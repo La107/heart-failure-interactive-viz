@@ -1,4 +1,4 @@
-// script.js — FINAL STABLE VERSION
+// script.js — FINAL: keep numbers, remove ALL tick marks, remove duplicate 0 at origin
 
 const CSV_FILE = "./heart_failure_clinical_records_dataset_cleaned.csv";
 
@@ -59,7 +59,7 @@ function init() {
   loadCSV();
 }
 
-/* ---------------- DATA ---------------- */
+/* ---------------- LOAD DATA ---------------- */
 
 async function loadCSV() {
   statusLeft.textContent = "Loading data…";
@@ -89,7 +89,7 @@ async function loadCSV() {
 
 function niceStep(span) {
   if (!isFinite(span) || span <= 0) return 1;
-  const target = span / 6;
+  const target = span / 6; // ~6 ticks
   const pow = Math.pow(10, Math.floor(Math.log10(target)));
   const n = target / pow;
   const step = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
@@ -104,6 +104,7 @@ function render() {
   const xCol = xSelect.value;
   const yCol = ySelect.value;
 
+  // group rows by outcome label
   const groups = new Map();
 
   for (const row of rawData) {
@@ -119,13 +120,9 @@ function render() {
     groups.get(outcome).push(row);
   }
 
-  const colorMap = {
-    Died: "#1f77b4",
-    Survived: "#ff7f0e"
-  };
+  const colorMap = { Died: "#1f77b4", Survived: "#ff7f0e" };
 
   const traces = [];
-
   for (const [outcome, rows] of groups.entries()) {
     traces.push({
       type: "scattergl",
@@ -141,14 +138,16 @@ function render() {
         `${yCol}: ${r[yCol]}`
       ),
       hovertemplate: "%{text}<extra></extra>",
-      marker: {
-        size: 8,
-        opacity: 0.75,
-        color: colorMap[outcome]
-      }
+      marker: { size: 8, opacity: 0.75, color: colorMap[outcome] || "#444" }
     });
   }
 
+  if (!traces.length) {
+    statusLeft.textContent = "No valid points for these axis selections.";
+    return;
+  }
+
+  // ranges
   const xs = traces.flatMap(t => t.x);
   const ys = traces.flatMap(t => t.y);
 
@@ -160,20 +159,24 @@ function render() {
   const ypad = ymax * 0.05 || 1;
 
   fullRanges.x = [xmin - xpad, xmax + xpad];
-  fullRanges.y = [0, ymax + ypad];
+  fullRanges.y = [0, ymax + ypad]; // Y starts at 0
 
   const xStep = niceStep(fullRanges.x[1] - fullRanges.x[0]);
   const yStep = niceStep(fullRanges.y[1] - fullRanges.y[0]);
 
+  // ✅ keep numbers, remove ALL tick marks (no dashes)
   const axisCommon = {
     showgrid: false,
     zeroline: false,
+
     showline: true,
     linewidth: 1.8,
     linecolor: "#111",
 
-    ticks: "outside",
-    ticklen: 0,              // ← removes vertical dashes
+    ticks: "",       // no tick marks
+    ticklen: 0,
+    tickwidth: 0,
+
     showticklabels: true,
     tickfont: { size: 12, color: "#111" },
 
@@ -186,21 +189,24 @@ function render() {
     paper_bgcolor: "rgba(0,0,0,0)",
     plot_bgcolor: "rgba(0,0,0,0)",
 
+    // ✅ X axis numbers, but avoid showing "0" at the origin
     xaxis: {
       ...axisCommon,
       title: { text: xCol },
       range: fullRanges.x,
       tickmode: "linear",
-      dtick: xStep
+      dtick: xStep,
+      tick0: xStep // shifts ticks so 0 is not printed on X
     },
 
+    // ✅ Y axis numbers, start from 0 (single 0 here)
     yaxis: {
       ...axisCommon,
       title: { text: yCol },
       range: fullRanges.y,
       tickmode: "linear",
-      tick0: 0,
-      dtick: yStep
+      dtick: yStep,
+      tick0: 0
     },
 
     legend: {
@@ -227,8 +233,9 @@ function zoom(factor) {
   const xr = gd.layout?.xaxis?.range;
   const yr = gd.layout?.yaxis?.range;
 
-  const xRange = xr ?? fullRanges.x;
-  const yRange = yr ?? fullRanges.y;
+  const xRange = (xr && xr.length === 2) ? xr : fullRanges.x;
+  const yRange = (yr && yr.length === 2) ? yr : fullRanges.y;
+  if (!xRange || !yRange) return;
 
   const xMid = (xRange[0] + xRange[1]) / 2;
   const yMid = (yRange[0] + yRange[1]) / 2;
