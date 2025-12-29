@@ -46,7 +46,7 @@ label {
   font-weight: 700;
 }
 
-select, input[type="file"] {
+select {
   width: 100%;
   padding: 12px;
   border-radius: 8px;
@@ -76,15 +76,7 @@ button:hover {
   background: rgba(0,0,0,0.06);
 }
 
-.hint {
-  margin: 10px 0;
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.35;
-}
-
 .chartWrap {
-  position: relative;
   padding: 0;
 }
 
@@ -93,14 +85,37 @@ button:hover {
   height: 100vh;
 }
 
-.status {
-  position: absolute;
-  left: 16px;
-  top: 12px;
-  padding: 8px 10px;
-  font-size: 13px;
-  color: var(--muted);
-  background: rgba(255,255,255,0.9);
+.statusLeft {
+  padding: 10px 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
+  color: var(--muted);
+  font-size: 14px;
+  background: rgba(0,0,0,0.02);
 }
+
+.legendLeft {
+  display: grid;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: rgba(0,0,0,0.02);
+}
+
+.legendItem {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 16px;
+}
+
+.swatch {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.swatchDied { background: #1f77b4; }
+.swatchSurvived { background: #ff7f0e; }
