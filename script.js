@@ -179,6 +179,8 @@ function render() {
 
     showticklabels: true,
     tickfont: { size: 12, color: "#111" },
+    ticklabelstandoff: 12,
+
 
     automargin: true,
     title_standoff: 30
