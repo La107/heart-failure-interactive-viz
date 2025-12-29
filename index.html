@@ -5,10 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Heart Failure – Interactive Scatter Plot</title>
 
-  <!-- Plotly (includes Plotly.d3 to load CSV easily) -->
+  <!-- Plotly -->
   <script src="https://cdn.plot.ly/plotly-2.27.0.min.js"></script>
 
-  <link rel="stylesheet" href="style.css" />
+  <!-- Anti-cache (incrementa v=... quando cambi file) -->
+  <link rel="stylesheet" href="style.css?v=2" />
 </head>
 
 <body>
@@ -37,7 +38,8 @@
       <label class="check"><input type="checkbox" id="smoking"> Smoking</label>
 
       <button id="resetZoom" type="button">Reset zoom</button>
-      <!-- NO status / NO "Displayed..." paragraph -->
+
+      <!-- NOTA: qui NON c'è nessun "status" o "Showing..." -->
     </aside>
 
     <main class="plot-area">
@@ -45,6 +47,7 @@
     </main>
   </div>
 
-  <script src="script.js"></script>
+  <!-- Anti-cache -->
+  <script src="script.js?v=2"></script>
 </body>
 </html>
